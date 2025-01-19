@@ -1,0 +1,29 @@
+# Git automation scripts
+push_development.ps1
+push_master.ps1
+
+# Windows system files
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*~
+
+# Environment files
+.env
+.env.local
+
+# Other
+node_modules/
+__pycache__/
+*.pyc
