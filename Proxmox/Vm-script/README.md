@@ -76,14 +76,14 @@ cd proxmox-vm-manager
 
 2. Make the script executable:
 ```bash
-chmod +x create_ubuntu_vm_simple.sh
+chmod +x Deploy_Script.sh
 ```
 
 ## Usage
 
 Run the script as root:
 ```bash
-sudo ./create_ubuntu_vm_simple.sh
+sudo ./Deploy_Script.sh
 ```
 
 The script will present a menu with the following options:
