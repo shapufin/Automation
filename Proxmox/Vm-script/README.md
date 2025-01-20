@@ -4,41 +4,40 @@ A user-friendly script to manage Proxmox VMs with automatic IP assignment and te
 
 ## Features
 
-- **Template Management**
-  - Create new templates
-  - Clone from existing templates
-  - List all templates
-  - Delete templates
-  - Move templates between storages
-- **Automatic Network Configuration**
-  - Smart IP assignment
-  - Automatic gateway detection
-  - Network bridge selection
-  - Prevents IP conflicts
-- **SSH Key Management**
-  - Automatic SSH key setup
-  - Secure VM access
-  - Cloud-init integration
-- **Package Management**
-  - Examine installed packages
-  - Search for specific packages
-  - View common package categories
-  - Filter and sort package lists
-- **Storage Management**
-  - Move templates between storages
-  - Move VMs between storages
-  - Shows available space per storage
-  - Supports different storage types
-  - Safe migration process
-- **Interactive Dialog-Based Interface**
-  - User-friendly menu-driven interface
-  - Easy navigation and selection
-- **Detailed Logging**
-  - Logs all operations for troubleshooting
-  - Error handling and recovery
-- **Error Handling and Recovery**
-  - Automatic error detection and handling
-  - Safe recovery from errors
+- Create Ubuntu templates with customizable options
+- List existing templates
+- Delete templates
+- Clone VMs from templates (full clones)
+- Examine template package information
+- Move templates between storage locations
+- Move VMs between storage locations
+- Interactive dialog-based interface
+- Detailed logging
+- Error handling and recovery
+
+## Storage Management
+
+When moving templates or VMs:
+1. Shows current storage location
+2. Lists compatible storage targets
+3. Displays storage type and free space
+4. Safely migrates all disks
+5. Removes old disks after successful migration
+6. Verifies successful move
+
+## Cloning Features
+
+### Full Clone Support
+- Creates completely independent VM copies
+- No dependencies on source template
+- Separate disk storage for each clone
+- Full disk management capabilities
+
+### Disk Management
+- Optional disk resizing during clone
+- Supports standard size formats (e.g., 32G, 64G)
+- Automatic disk migration with storage moves
+- Clean disk management (no unused disks)
 
 ## Storage Movement Features
 
@@ -104,11 +103,13 @@ The script will present a menu with the following options:
    - Confirmation required
 
 4. **Clone from Template**
-   - Choose source template
-   - Set new VM ID and name
-   - Optionally resize disk
-   - Automatic IP assignment
-   - SSH key configuration
+   - Select source template
+   - Enter new VM ID
+   - Enter new VM name
+   - Option to resize disk
+   - Creates full independent clone
+   - Automatic disk resizing if requested
+   - No template dependencies
 
 5. **Examine Image Packages**
    - View all installed packages
@@ -146,15 +147,6 @@ VMs are automatically configured with:
 - Proxmox host's SSH key
 - Cloud-init integration
 - Secure key-based authentication
-
-### Storage Management
-
-When moving templates or VMs:
-1. Shows current storage location
-2. Lists compatible storage targets
-3. Displays storage type and free space
-4. Safely migrates the template or VM
-5. Verifies successful move
 
 ## Notes
 

@@ -585,99 +585,68 @@ clone_from_template() {
     # Clean up temp files
     rm -f "$temp_list" "$menu_list"
 
-    # If user cancelled, return
-    if [ $? -ne 0 ]; then
+    if [ -z "$template_id" ]; then
         return 1
     fi
 
     # Get new VM ID
-    while true; do
-        local new_vmid=$(dialog --stdout --title "Clone Template" \
-            --inputbox "Enter new VM ID (positive number):" 8 40)
-        
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-        
-        if verify_vm_id "$new_vmid"; then
-            break
-        else
-            dialog --msgbox "Invalid VM ID or ID already in use.\nPlease enter a different number." 8 60
-        fi
-    done
+    local new_vmid
+    new_vmid=$(dialog --stdout \
+        --title "Clone Template" \
+        --inputbox "Enter new VM ID:" 8 40)
+
+    if [ -z "$new_vmid" ]; then
+        return 1
+    fi
+
+    # Verify VM ID is available
+    if ! verify_vm_id "$new_vmid"; then
+        dialog --msgbox "VM ID $new_vmid is not available." 6 40
+        return 1
+    fi
 
     # Get new VM name
-    local new_name=$(dialog --stdout --title "Clone Template" \
+    local new_name
+    new_name=$(dialog --stdout \
+        --title "Clone Template" \
         --inputbox "Enter new VM name:" 8 40)
-    
-    if [ $? -ne 0 ]; then
+
+    if [ -z "$new_name" ]; then
         return 1
     fi
 
-    # Get disk size
-    local disk_size=$(dialog --stdout --title "Clone Template" \
-        --inputbox "Enter disk size (e.g., 32G, 64G):" 8 40)
-    
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    # Validate disk size format
-    if ! echo "$disk_size" | grep -qE '^[0-9]+[GT]$'; then
-        dialog --msgbox "Invalid disk size format. Use format like '32G' or '1T'" 6 60
-        return 1
-    fi
-
-    # Get list of available bridges
-    local bridges=$(get_network_bridges)
-    local bridge_options=""
-    local bridge_count=0
-    for bridge in $bridges; do
-        bridge_count=$((bridge_count + 1))
-        bridge_options="$bridge_options $bridge_count $bridge"
-    done
-
-    # Show bridge selection if bridges found
-    local selected_bridge="vmbr0"
-    if [ ! -z "$bridge_options" ]; then
-        local bridge_choice=$(dialog --stdout \
-            --title "Network Configuration" \
-            --menu "Select network bridge:" 15 50 5 $bridge_options)
+    # Ask if user wants to resize the disk
+    if dialog --yesno "Would you like to resize the disk?" 6 40; then
+        local new_size
+        new_size=$(dialog --stdout \
+            --title "Resize Disk" \
+            --inputbox "Enter new size (e.g., 32G):" 8 40)
         
-        if [ $? -eq 0 ]; then
-            selected_bridge=$(echo "$bridges" | sed -n "${bridge_choice}p")
+        if [ -n "$new_size" ]; then
+            # Clone the VM with full clone option
+            log "Cloning template $template_id to VM $new_vmid (full clone)"
+            if ! qm clone "$template_id" "$new_vmid" --name "$new_name" --full; then
+                dialog --msgbox "Failed to clone template." 6 40
+                return 1
+            fi
+            
+            # Resize the disk
+            log "Resizing disk to $new_size"
+            if ! qm resize "$new_vmid" scsi0 "$new_size"; then
+                dialog --msgbox "Failed to resize disk. The VM was created but disk size remains unchanged." 8 60
+                return 1
+            fi
+        fi
+    else
+        # Just clone without resizing, but still make it a full clone
+        log "Cloning template $template_id to VM $new_vmid (full clone)"
+        if ! qm clone "$template_id" "$new_vmid" --name "$new_name" --full; then
+            dialog --msgbox "Failed to clone template." 6 40
+            return 1
         fi
     fi
 
-    # Get Proxmox SSH key for cloud-init
-    local ssh_key=$(get_proxmox_ssh_key)
-    if [ -z "$ssh_key" ]; then
-        dialog --msgbox "Failed to get or generate Proxmox SSH key." 6 50
-        return 1
-    fi
-
-    # Clone the VM
-    if ! qm clone "$template_id" "$new_vmid" --name "$new_name" --full; then
-        dialog --msgbox "Failed to clone template." 6 40
-        return 1
-    fi
-
-    # Configure cloud-init with SSH key
-    if ! qm set "$new_vmid" --sshkeys <(echo "$ssh_key"); then
-        dialog --msgbox "Warning: Failed to set SSH key." 6 50
-    fi
-
-    # Get next available IP and gateway
-    local ip_info=$(get_next_free_ip "$selected_bridge")
-    local next_ip=$(echo "$ip_info" | cut -d'|' -f1)
-    local gateway=$(echo "$ip_info" | cut -d'|' -f2)
-
-    # Configure network
-    if ! qm set "$new_vmid" --ipconfig0 "ip=${next_ip}/24,gw=${gateway}"; then
-        dialog --msgbox "Warning: Failed to set static IP configuration." 6 50
-    fi
-
-    dialog --msgbox "Successfully cloned template to VM $new_vmid\nName: $new_name\nIP Address: $next_ip\nGateway: $gateway" 10 60
+    dialog --msgbox "Successfully cloned template to VM $new_vmid" 6 50
     return 0
 }
 
@@ -980,7 +949,7 @@ move_template_storage() {
     local success=true
     for disk in "${disks[@]}"; do
         log "Moving disk $disk to $target_storage"
-        if ! qm move_disk "$template_id" "$disk" "$target_storage"; then
+        if ! qm move_disk "$template_id" "$disk" "$target_storage" --delete=1; then
             log_error "Failed to move disk $disk to $target_storage"
             success=false
             break
@@ -1123,7 +1092,7 @@ move_vm_storage() {
     local success=true
     for disk in "${disks[@]}"; do
         log "Moving disk $disk to $target_storage"
-        if ! qm move_disk "$vm_id" "$disk" "$target_storage"; then
+        if ! qm move_disk "$vm_id" "$disk" "$target_storage" --delete=1; then
             log_error "Failed to move disk $disk to $target_storage"
             success=false
             break
