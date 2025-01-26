@@ -615,6 +615,33 @@ clone_from_template() {
         return 1
     fi
 
+    # Get network bridge selection
+    local bridges=$(get_network_bridges)
+    local bridge_menu=""
+    local default_bridge="vmbr0"
+    
+    # Create bridge menu
+    for bridge in $bridges; do
+        bridge_menu="$bridge_menu $bridge \"Network Bridge $bridge\""
+    done
+
+    # Show bridge selection dialog
+    local selected_bridge
+    selected_bridge=$(dialog --stdout \
+        --title "Network Configuration" \
+        --menu "Select network bridge:" 15 50 10 $bridge_menu)
+
+    if [ -z "$selected_bridge" ]; then
+        selected_bridge="$default_bridge"
+    fi
+
+    # Get SSH key
+    local ssh_key=$(get_proxmox_ssh_key)
+    if [ -z "$ssh_key" ]; then
+        dialog --msgbox "Failed to get or generate SSH key." 6 40
+        return 1
+    fi
+
     # Ask if user wants to resize the disk
     if dialog --yesno "Would you like to resize the disk?" 6 40; then
         local new_size
@@ -644,6 +671,18 @@ clone_from_template() {
             dialog --msgbox "Failed to clone template." 6 40
             return 1
         fi
+    fi
+
+    # Configure network and SSH
+    log "Configuring network bridge to $selected_bridge"
+    if ! qm set "$new_vmid" --net0 "virtio,bridge=$selected_bridge"; then
+        dialog --msgbox "Warning: Failed to configure network bridge." 6 50
+    fi
+
+    # Configure SSH key via cloud-init
+    log "Configuring SSH key"
+    if ! qm set "$new_vmid" --sshkey <(echo "$ssh_key"); then
+        dialog --msgbox "Warning: Failed to configure SSH key." 6 50
     fi
 
     dialog --msgbox "Successfully cloned template to VM $new_vmid" 6 50
@@ -780,6 +819,36 @@ check_dependencies() {
         return 1
     fi
     return 0
+}
+
+# Function to install required packages
+install_dependencies() {
+    local packages=("dialog" "libguestfs-tools")
+    local missing_packages=()
+
+    # Check if apt-get is available
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log_error "apt-get not found. This script requires a Debian-based system."
+        exit 1
+    fi
+
+    # Check for missing packages
+    for pkg in "${packages[@]}"; do
+        if ! dpkg -l | grep -q "^ii  $pkg "; then
+            missing_packages+=("$pkg")
+        fi
+    done
+
+    # Install missing packages if any
+    if [ ${#missing_packages[@]} -ne 0 ]; then
+        log "Installing missing packages: ${missing_packages[*]}"
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing_packages[@]}"
+        if [ $? -ne 0 ]; then
+            log_error "Failed to install required packages"
+            exit 1
+        fi
+    fi
 }
 
 # Cache VM configurations for faster IP checking
@@ -1126,6 +1195,9 @@ if [ "$EUID" -ne 0 ]; then
     log_error "Please run as root"
     exit 1
 fi
+
+# Install dependencies first
+install_dependencies
 
 # Check dependencies
 if ! check_dependencies; then
