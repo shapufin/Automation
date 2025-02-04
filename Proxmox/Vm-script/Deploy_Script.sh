@@ -767,16 +767,52 @@ examine_image() {
 # Function to check dependencies
 check_dependencies() {
     local -r REQUIRED_COMMANDS=("qm" "dialog" "ip" "grep" "awk" "virt-inspector")
+    local -r REQUIRED_LIBRARIES=("libguestfs-tools" "cloud-init")
     local missing_commands=()
+    local missing_libraries=()
+    local failed_libraries=()
 
+    # Check for required commands
     for cmd in "${REQUIRED_COMMANDS[@]}"; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
             missing_commands+=("$cmd")
         fi
     done
 
+    # Check for required libraries
+    for lib in "${REQUIRED_LIBRARIES[@]}"; do
+        if ! dpkg -s "$lib" >/dev/null 2>&1; then
+            missing_libraries+=("$lib")
+        fi
+    done
+
     if [ ${#missing_commands[@]} -ne 0 ]; then
         log_error "Missing required commands: ${missing_commands[*]}"
+        return 1
+    fi
+
+    if [ ${#missing_libraries[@]} -ne 0 ]; then
+        log "Installing missing libraries: ${missing_libraries[*]}"
+        apt-get update
+        for lib in "${missing_libraries[@]}"; do
+            log "Installing library: $lib"
+            if [ "$lib" == "cloud-init" ]; then
+                log "WARNING: Installing cloud-init may remove unused Proxmox packages."
+                if ! apt-get install -y "$lib"; then
+                    log_error "Failed to install library: $lib"
+                    failed_libraries+=("$lib")
+                fi
+            else
+                if ! apt-get install -y --no-remove "$lib"; then
+                    log_error "Failed to install library: $lib"
+                    failed_libraries+=("$lib")
+                fi
+            fi
+        done
+    fi
+
+    if [ ${#failed_libraries[@]} -ne 0 ]; then
+        log_error "Failed to install libraries: ${failed_libraries[*]}"
         return 1
     fi
     return 0

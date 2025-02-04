@@ -136,7 +136,9 @@ The script will present a menu with the following options:
 ### Network Configuration
 
 The script automatically:
-- Detects available network bridges
+- Detects available network bridges (vmbr0, vmbr1, etc.)
+- Lists all available bridges in the GUI during VM creation/cloning
+- Validates bridge existence before configuration
 - Finds the next available IP address
 - Sets appropriate gateway
 - Configures network interfaces
@@ -144,9 +146,11 @@ The script automatically:
 ### SSH Access
 
 VMs are automatically configured with:
-- Proxmox host's SSH key
-- Cloud-init integration
+- Proxmox host's SSH public key (retrieved from /root/.ssh/id_rsa.pub)
+- If the SSH key doesn't exist, the script will prompt to generate one
+- Cloud-init integration for automatic key deployment
 - Secure key-based authentication
+- Verification of key presence before VM creation
 
 ## Notes
 
