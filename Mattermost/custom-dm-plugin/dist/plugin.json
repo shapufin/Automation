@@ -1,0 +1,62 @@
+{
+    "id": "com.mattermost.custom-dm-plugin",
+    "name": "Custom DM Plugin",
+    "description": "A plugin to disable direct messages for non-admin users and specific email domains",
+    "version": "1.0.0",
+    "min_server_version": "6.0.0",
+    "server": {
+        "executable": "server/plugin.exe"
+    },
+    "settings_schema": {
+        "header": "Configure Custom DM Plugin",
+        "footer": "* For managing exempted users via commands, use /custom-dm help",
+        "settings": [
+            {
+                "key": "Enabled",
+                "display_name": "Enable Plugin",
+                "type": "bool",
+                "help_text": "When true, the plugin will enforce DM restrictions.",
+                "placeholder": "",
+                "default": true
+            },
+            {
+                "key": "AdminOnly",
+                "display_name": "Admin Only Mode",
+                "type": "bool",
+                "help_text": "If enabled, only admins can send DMs. If disabled, anyone not in blocked domains can send DMs.",
+                "default": false
+            },
+            {
+                "key": "AdminsExempt",
+                "display_name": "Admins Exempt from Domain Restrictions",
+                "type": "bool",
+                "help_text": "When true, admins can send DMs regardless of their email domain.",
+                "default": true
+            },
+            {
+                "key": "BlockedDomains",
+                "display_name": "Blocked Email Domains",
+                "type": "text",
+                "help_text": "Comma-separated list of email domains to block from sending DMs (e.g., domain1.com,domain2.com). Only applies when Admin Only Mode is disabled.",
+                "placeholder": "operatori.wearefiber.com",
+                "default": ""
+            },
+            {
+                "key": "ExemptedUsers",
+                "display_name": "Exempted Users",
+                "type": "text",
+                "help_text": "Comma-separated list of usernames to exempt from restrictions. Can also be managed via /custom-dm commands.",
+                "placeholder": "user1,user2",
+                "default": ""
+            },
+            {
+                "key": "RejectionMessage",
+                "display_name": "Rejection Message",
+                "type": "text",
+                "help_text": "Message to display when a user is blocked from sending a direct message.",
+                "placeholder": "Direct messages have been disabled by the system administrator.",
+                "default": "Direct messages have been disabled by the system administrator."
+            }
+        ]
+    }
+}
