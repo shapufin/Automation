@@ -1,0 +1,18 @@
+{
+    "id": "com.mattermost.custom-groups",
+    "name": "Custom Groups",
+    "description": "Create and manage custom user groups with @mentions",
+    "version": "0.1.0",
+    "min_server_version": "5.37.0",
+    "server": {
+        "executable": "server/plugin.exe"
+    },
+    "settings_schema": {
+        "header": "Configure custom groups plugin settings",
+        "footer": "This plugin works with both Free and Enterprise editions of Mattermost.",
+        "settings": []
+    },
+    "props": {
+        "has_special_mentions": true
+    }
+}

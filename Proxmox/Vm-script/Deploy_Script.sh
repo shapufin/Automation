@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Install required dependencies
+REQUIRED_COMMANDS=("qm" "dialog" "ip" "grep" "awk" "virt-inspector")
+REQUIRED_LIBRARIES=("libguestfs-tools" "cloud-init")
+
+for cmd in "${REQUIRED_COMMANDS[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Installing $cmd..."
+        apt-get install -y "$cmd"
+    fi
+done
+
+for lib in "${REQUIRED_LIBRARIES[@]}"; do
+    if ! dpkg -s "$lib" >/dev/null 2>&1; then
+        echo "Installing $lib..."
+        apt-get install -y "$lib"
+    fi
+done
+
 # Default values
 DEFAULT_MEMORY=4096
 DEFAULT_CORES=4
