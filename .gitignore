@@ -22,7 +22,7 @@ desktop.ini
 # Environment files
 .env
 .env.local
-
+.windsurfrules
 # Other
 node_modules/
 __pycache__/
